@@ -177,6 +177,48 @@ export default function SettingsPage() {
             </div>
           )}
 
+          {/* 1-Click Demo Accounts */}
+          <div className="bg-zinc-900/80 border border-zinc-800 rounded-xl p-3.5 space-y-2">
+            <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider block">
+              1-Click Demo Logins:
+            </span>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setEmail("creator@nudy.local");
+                  setPassword("CreatorPassword18+!");
+                  setAuthMode("login");
+                }}
+                className="py-1.5 px-2.5 rounded-lg bg-pink-500/10 hover:bg-pink-500/20 text-pink-400 border border-pink-500/20 text-[11px] font-medium transition text-center"
+              >
+                Creator (250 Cr)
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setEmail("admin@nudy.local");
+                  setPassword("AdminPassword18+!");
+                  setAuthMode("login");
+                }}
+                className="py-1.5 px-2.5 rounded-lg bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 border border-indigo-500/20 text-[11px] font-medium transition text-center"
+              >
+                Admin (1000 Cr)
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setEmail("newuser@nudy.local");
+                  setPassword("UserPassword18+!");
+                  setAuthMode("login");
+                }}
+                className="py-1.5 px-2.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/20 text-[11px] font-medium transition text-center"
+              >
+                Unverified (50 Cr)
+              </button>
+            </div>
+          </div>
+
           <form onSubmit={handleAuthSubmit} className="space-y-4">
             {authMode === "signup" && (
               <div>

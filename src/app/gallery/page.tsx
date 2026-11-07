@@ -13,6 +13,8 @@ import {
   Lock,
   CheckCircle2,
   AlertTriangle,
+  FolderPlus,
+  Folder,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -56,6 +58,30 @@ export default function GalleryPage() {
   const [reportingItem, setReportingItem] = useState<GenerationItem | null>(null);
   const [reportReason, setReportReason] = useState("");
   const [reportSuccess, setReportSuccess] = useState(false);
+
+  // Collection modal
+  const [showCollectionModal, setShowCollectionModal] = useState(false);
+  const [targetCollection, setTargetCollection] = useState("");
+
+  const handleMoveCollection = async (newCollection: string) => {
+    if (!activeItem || !newCollection.trim()) return;
+    try {
+      const res = await fetch(`/api/generations/${activeItem.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ collectionName: newCollection.trim() }),
+      });
+      if (res.ok) {
+        setGenerations((prev) =>
+          prev.map((g) => (g.id === activeItem.id ? { ...g, collectionName: newCollection.trim() } : g))
+        );
+        setActiveItem((prev: any) => ({ ...prev, collectionName: newCollection.trim() }));
+        setShowCollectionModal(false);
+      }
+    } catch {
+      //
+    }
+  };
 
   const fetchGenerations = async () => {
     try {
@@ -378,6 +404,23 @@ export default function GalleryPage() {
                       className={`w-4 h-4 ${activeItem.isFavorite ? "fill-pink-500 text-pink-500" : ""}`}
                     />
                   </button>
+
+                  <button
+                    onClick={() => {
+                      setTargetCollection(activeItem.collectionName || "Default");
+                      setShowCollectionModal(true);
+                    }}
+                    className="p-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white transition flex items-center gap-1 text-xs"
+                    title="Organize Collection"
+                  >
+                    <Folder className="w-4 h-4 text-pink-400" />
+                  </button>
+                </div>
+
+                {/* Collection Tag */}
+                <div className="flex items-center gap-1.5 text-xs text-zinc-400 pt-1">
+                  <Folder className="w-3.5 h-3.5 text-pink-500" />
+                  <span>Collection: <strong className="text-zinc-200">{activeItem.collectionName || "Default"}</strong></span>
                 </div>
 
                 <div className="flex items-center justify-between pt-2 text-xs">
@@ -394,6 +437,80 @@ export default function GalleryPage() {
                     <Trash2 className="w-3.5 h-3.5" /> Delete Generation
                   </button>
                 </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Organize Collection Modal */}
+      {showCollectionModal && activeItem && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4 backdrop-blur-md">
+          <div className="max-w-sm w-full bg-[#121215] border border-zinc-800 rounded-2xl p-6 space-y-4 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
+              <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                <FolderPlus className="w-4 h-4 text-pink-500" /> Organize Collection
+              </h3>
+              <button
+                onClick={() => setShowCollectionModal(false)}
+                className="text-zinc-400 hover:text-white text-sm"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              <label className="text-xs text-zinc-400 block">
+                Assign to collection or type a new one:
+              </label>
+
+              <input
+                type="text"
+                value={targetCollection}
+                onChange={(e) => setTargetCollection(e.target.value)}
+                placeholder="e.g. Cyberpunk, Portraits, Videos..."
+                className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-pink-500"
+              />
+
+              {collections.length > 0 && (
+                <div>
+                  <span className="text-[10px] text-zinc-400 uppercase tracking-wider block mb-1.5">
+                    Existing Collections:
+                  </span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {collections.map((c) => (
+                      <button
+                        key={c}
+                        type="button"
+                        onClick={() => setTargetCollection(c)}
+                        className={`text-[11px] px-2.5 py-1 rounded-lg border transition ${
+                          targetCollection === c
+                            ? "bg-pink-600/20 text-pink-400 border-pink-500"
+                            : "bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white"
+                        }`}
+                      >
+                        {c}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowCollectionModal(false)}
+                  className="px-3 py-1.5 text-xs text-zinc-400 hover:text-white"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleMoveCollection(targetCollection)}
+                  className="px-4 py-1.5 rounded-xl bg-pink-600 hover:bg-pink-500 text-white font-semibold text-xs transition"
+                >
+                  Save Collection
+                </button>
               </div>
             </div>
           </div>
