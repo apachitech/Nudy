@@ -39,7 +39,25 @@ export async function GET(req: NextRequest) {
       },
     });
 
-    return NextResponse.json({ reports, recentAuditLogs });
+    // Aggregate platform metrics for compliance and security
+    const [totalUsers, verifiedUsers, totalGenerations, blockedPrompts, bannedUsers] = await Promise.all([
+      prisma.user.count(),
+      prisma.user.count({ where: { isAgeVerified: true } }),
+      prisma.generation.count(),
+      prisma.auditLog.count({ where: { action: "PROMPT_BLOCKED" } }),
+      prisma.user.count({ where: { isBanned: true } }),
+    ]);
+
+    const stats = {
+      totalUsers,
+      verifiedUsers,
+      totalGenerations,
+      blockedPrompts,
+      bannedUsers,
+      pendingReports: reports.filter((r) => r.status === "PENDING").length,
+    };
+
+    return NextResponse.json({ reports, recentAuditLogs, stats });
   } catch (err: any) {
     return NextResponse.json({ error: "Failed to load moderation queue" }, { status: 500 });
   }

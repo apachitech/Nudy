@@ -184,3 +184,4 @@ Ideal for Hetzner, DigitalOcean, AWS EC2, or Linode ($10–$20/mo):
    ```
 5. **Click "Deploy" on Vercel**:
    Your application will be live globally with edge CDN caching, DDoS protection, and automated CI/CD!
+
