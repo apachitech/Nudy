@@ -98,3 +98,4 @@ export class MockGenerationProvider implements IGenerationProvider {
     };
   }
 }
+

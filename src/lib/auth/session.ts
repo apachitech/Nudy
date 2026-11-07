@@ -67,3 +67,4 @@ export async function getSessionUser(req: NextRequest) {
 
   return user;
 }
+

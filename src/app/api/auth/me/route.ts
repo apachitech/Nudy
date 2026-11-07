@@ -13,3 +13,4 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ user: null }, { status: 500 });
   }
 }
+

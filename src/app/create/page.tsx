@@ -54,6 +54,8 @@ export default function CreateStudioPage() {
   const [videoDuration, setVideoDuration] = useState<number>(4.0);
   const [motionStrength, setMotionStrength] = useState<number>(0.65);
   const [resolution, setResolution] = useState<string>("1024x1024");
+  const [sourceImageUrl, setSourceImageUrl] = useState<string>("");
+  const [userImages, setUserImages] = useState<any[]>([]);
 
   // State & Feedback
   const [isGenerating, setIsGenerating] = useState(false);
@@ -77,7 +79,33 @@ export default function CreateStudioPage() {
           setSelectedCharacterId(data.characters[0].id);
         }
       });
+
+    fetch("/api/generations?type=IMAGE")
+      .then((res) => (res.ok ? res.json() : { generations: [] }))
+      .then((data) => {
+        const assets = (data.generations || [])
+          .flatMap((g: any) => g.assets || [])
+          .filter((a: any) => a.mimeType?.includes("image"));
+        setUserImages(assets);
+        if (assets.length > 0) {
+          setSourceImageUrl(assets[0].url);
+        }
+      });
   }, []);
+
+  const handleMagicEnhance = () => {
+    const enhancements: Record<string, string> = {
+      realistic: ", masterpiece, 8k resolution, photorealistic, natural skin texture, soft ambient studio lighting, shot on 85mm f/1.4 lens, depth of field",
+      anime: ", highly detailed anime visual, vibrant colors, makoto shinkai aesthetic, smooth cel shading, sharp outlines, cinematic composition",
+      "3d": ", octane render, unreal engine 5, raytraced subsurface scattering, volumetric lighting, hyperdetailed 3d character model",
+      illustration: ", digital painting masterpiece, expressive painterly brushwork, concept art, atmospheric color grading, rich textures",
+    };
+    const suffix = enhancements[stylePreset] || enhancements.realistic;
+    if (!prompt.includes("masterpiece") && !prompt.includes("octane render")) {
+      setPrompt((prev) => `${prev.trim()}${suffix}`);
+      setToastMsg("Prompt enhanced with high-definition styling!");
+    }
+  };
 
   // Update prompt and seed when character is picked
   const handleSelectCharacter = (charId: string) => {
@@ -312,7 +340,17 @@ export default function CreateStudioPage() {
               <label className="text-xs font-bold uppercase tracking-wider text-zinc-400">
                 Prompt Box
               </label>
-              <span className="text-[11px] text-zinc-400">Ctrl + Enter to render</span>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleMagicEnhance}
+                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-pink-500/10 hover:bg-pink-500/20 text-pink-400 text-[11px] font-semibold border border-pink-500/30 transition"
+                  title="Enrich prompt with cinematic lighting, 8k resolution and detailed styling"
+                >
+                  <Sparkles className="w-3 h-3" /> Magic Enhance
+                </button>
+                <span className="text-[11px] text-zinc-400 hidden sm:inline">Ctrl + Enter to render</span>
+              </div>
             </div>
 
             <textarea
@@ -436,29 +474,59 @@ export default function CreateStudioPage() {
 
             {/* Video specific controls */}
             {genType === "VIDEO" && (
-              <div className="grid grid-cols-2 gap-3 pt-2 border-t border-zinc-800">
-                <div>
-                  <label className="text-xs font-medium text-zinc-400 block mb-1">Duration (sec)</label>
-                  <select
-                    value={videoDuration}
-                    onChange={(e) => setVideoDuration(parseFloat(e.target.value))}
-                    className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-white"
-                  >
-                    <option value={3.0}>3.0 seconds</option>
-                    <option value={4.0}>4.0 seconds</option>
-                    <option value={5.0}>5.0 seconds</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="text-xs font-medium text-zinc-400 block mb-1">Resolution</label>
-                  <select
-                    value={resolution}
-                    onChange={(e) => setResolution(e.target.value)}
-                    className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-white"
-                  >
-                    <option value="1280x720">720p HD</option>
-                    <option value="1024x1024">1024x1024 Square</option>
-                  </select>
+              <div className="space-y-3 pt-3 border-t border-zinc-800">
+                {userImages.length > 0 && (
+                  <div>
+                    <label className="text-xs font-semibold text-zinc-300 block mb-1.5">
+                      Source Image Reference (Select to Animate)
+                    </label>
+                    <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin">
+                      {userImages.slice(0, 8).map((img, idx) => (
+                        <div
+                          key={img.id || idx}
+                          onClick={() => setSourceImageUrl(img.url)}
+                          className={`relative w-16 h-16 rounded-xl overflow-hidden cursor-pointer shrink-0 border-2 transition ${
+                            sourceImageUrl === img.url
+                              ? "border-pink-500 scale-105 shadow-md shadow-pink-600/40"
+                              : "border-zinc-800 hover:border-zinc-600 opacity-70 hover:opacity-100"
+                          }`}
+                        >
+                          <img src={img.url} alt="Source" className="w-full h-full object-cover" />
+                          {sourceImageUrl === img.url && (
+                            <div className="absolute inset-0 bg-pink-600/30 flex items-center justify-center">
+                              <CheckCircle2 className="w-4 h-4 text-white" />
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs font-medium text-zinc-400 block mb-1">Duration (sec)</label>
+                    <select
+                      value={videoDuration}
+                      onChange={(e) => setVideoDuration(parseFloat(e.target.value))}
+                      className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-white"
+                    >
+                      <option value={3.0}>3.0 seconds</option>
+                      <option value={4.0}>4.0 seconds</option>
+                      <option value={5.0}>5.0 seconds</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-zinc-400 block mb-1">Resolution</label>
+                    <select
+                      value={resolution}
+                      onChange={(e) => setResolution(e.target.value)}
+                      className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-white"
+                    >
+                      <option value="1280x720">720p HD</option>
+                      <option value="1024x1024">1024x1024 Square</option>
+                    </select>
+                  </div>
                 </div>
               </div>
             )}

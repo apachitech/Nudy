@@ -134,3 +134,4 @@ export function getKYCProvider(): IKYCProvider {
       return new MockKYCProvider();
   }
 }
+

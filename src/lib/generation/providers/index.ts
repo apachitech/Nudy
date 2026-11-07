@@ -28,3 +28,4 @@ export function getGenerationProvider(): IGenerationProvider {
       return new MockGenerationProvider();
   }
 }
+

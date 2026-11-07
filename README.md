@@ -182,3 +182,4 @@ To move this application from development to live production, the following cred
 5. **Production PostgreSQL**:
    - Deploy PostgreSQL instance (e.g. AWS RDS, Supabase, Neon).
    - Set `DATABASE_URL` in `.env` and run `npx prisma db push`.
+

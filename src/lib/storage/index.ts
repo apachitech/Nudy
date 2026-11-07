@@ -74,3 +74,4 @@ export function getStorageProvider(): IStorageProvider {
       return new MockStorageProvider();
   }
 }
+

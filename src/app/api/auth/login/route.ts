@@ -72,3 +72,4 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Authentication failed" }, { status: 500 });
   }
 }
+

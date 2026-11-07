@@ -87,3 +87,4 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
     return NextResponse.json({ error: "Failed to delete generation" }, { status: 500 });
   }
 }
+

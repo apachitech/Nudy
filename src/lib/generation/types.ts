@@ -53,3 +53,4 @@ export interface JobStatusResult {
   outputs?: GeneratedAssetOutput[];
   error?: string;
 }
+
