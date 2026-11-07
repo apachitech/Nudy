@@ -1,0 +1,63 @@
+{
+  "client_id": "nudy_svd_client",
+  "prompt": {
+    "1": {
+      "inputs": {
+        "ckpt_name": "svd_xt_1_1.safetensors"
+      },
+      "class_type": "ImageOnlyCheckpointLoader"
+    },
+    "2": {
+      "inputs": {
+        "image": "source_input.png",
+        "upload": "image"
+      },
+      "class_type": "LoadImage"
+    },
+    "3": {
+      "inputs": {
+        "width": 1024,
+        "height": 576,
+        "video_frames": 25,
+        "motion_bucket_id": 127,
+        "fps": 6,
+        "augmentation_level": 0.0,
+        "clip_vision": ["1", 1],
+        "init_image": ["2", 0],
+        "vae": ["1", 2]
+      },
+      "class_type": "SVD_img2vid_Conditioning"
+    },
+    "4": {
+      "inputs": {
+        "seed": 884712,
+        "steps": 25,
+        "cfg": 2.5,
+        "sampler_name": "euler",
+        "scheduler": "karras",
+        "denoise": 1.0,
+        "model": ["1", 0],
+        "positive": ["3", 0],
+        "negative": ["3", 1],
+        "latent_image": ["3", 2]
+      },
+      "class_type": "KSampler"
+    },
+    "5": {
+      "inputs": {
+        "samples": ["4", 0],
+        "vae": ["1", 2]
+      },
+      "class_type": "VAEDecode"
+    },
+    "6": {
+      "inputs": {
+        "fps": 24,
+        "filename_prefix": "Nudy_SVD_Video",
+        "images": ["5", 0]
+      },
+      "class_type": "SaveAnimatedWEBP"
+    }
+  }
+}
+
