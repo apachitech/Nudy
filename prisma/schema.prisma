@@ -1,0 +1,210 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                      String              @id @default(uuid())
+  email                   String              @unique
+  passwordHash            String
+  name                    String?
+  avatarUrl               String?
+  role                    String              @default("USER") // USER, MODERATOR, ADMIN
+  isAgeVerified           Boolean             @default(false)
+  isBanned                Boolean             @default(false)
+  banReason               String?
+  creditBalance           Int                 @default(50)
+  createdAt               DateTime            @default(now())
+  updatedAt               DateTime            @updatedAt
+
+  verificationRecords     VerificationRecord[]
+  characters              Character[]
+  generations             Generation[]
+  creditsLedger           CreditsLedger[]
+  subscriptions           Subscription[]
+  reportsSubmitted        Report[]            @relation("UserReports")
+  moderationActions       ModerationAction[]  @relation("TargetUserActions")
+  auditLogs               AuditLog[]
+}
+
+model VerificationRecord {
+  id                String    @id @default(uuid())
+  userId            String
+  provider          String    @default("mock") // mock, persona, veriff, sumsub
+  providerReference String?
+  status            String    @default("PENDING") // PENDING, APPROVED, REJECTED
+  idDocumentType    String?   // PASSPORT, DRIVERS_LICENSE, NATIONAL_ID
+  verifiedAge       Int?
+  rejectionReason   String?
+  documentHash      String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Character {
+  id                String       @id @default(uuid())
+  userId            String
+  name              String
+  apparentAge       Int          // Must be >= 18 by law; UI enforces >= 21
+  gender            String       @default("female")
+  bodyType          String       @default("curvy")
+  hairStyle         String       @default("long wavy")
+  hairColor         String       @default("blonde")
+  eyeColor          String       @default("blue")
+  ethnicity         String?
+  faceFeatures      String?
+  outfit            String?
+  personality       String?
+  setting           String?
+  defaultPrompt     String?
+  negativePrompt    String?
+  baseSeed          Int          @default(42)
+  referenceAssetId  String?
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  user              User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  generations       Generation[]
+}
+
+model Generation {
+  id                String       @id @default(uuid())
+  userId            String
+  characterId       String?
+  type              String       @default("IMAGE") // IMAGE, VIDEO
+  prompt            String
+  negativePrompt    String?
+  stylePreset       String       @default("realistic") // realistic, anime, 3d, illustration
+  aspectRatio       String       @default("1:1") // 1:1, 16:9, 9:16, 4:3, 3:4
+  seed              Int          @default(42)
+  numOutputs        Int          @default(1)
+  videoDuration     Float?       // e.g. 3.0, 5.0 seconds
+  motionStrength    Float?       // 0.1 to 1.0
+  resolution        String       @default("1024x1024")
+  status            String       @default("QUEUED") // QUEUED, PROCESSING, COMPLETED, FAILED, FLAGGED
+  costCredits       Int          @default(2)
+  errorMessage      String?
+  isFavorite        Boolean      @default(false)
+  collectionName    String       @default("Default")
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  user              User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  character         Character?   @relation(fields: [characterId], references: [id], onDelete: SetNull)
+  assets            Asset[]
+  jobs              Job[]
+  reports           Report[]
+}
+
+model Asset {
+  id                String       @id @default(uuid())
+  generationId      String
+  storageKey        String
+  storageProvider   String       @default("mock") // mock, s3, r2, minio
+  url               String
+  mimeType          String       @default("image/png")
+  fileSizeBytes     Int          @default(0)
+  width             Int?
+  height            Int?
+  duration          Float?
+  sha256Hash        String?
+  createdAt         DateTime     @default(now())
+
+  generation        Generation   @relation(fields: [generationId], references: [id], onDelete: Cascade)
+}
+
+model Job {
+  id                String       @id @default(uuid())
+  generationId      String
+  queueName         String       @default("generation-queue")
+  status            String       @default("PENDING") // PENDING, ACTIVE, COMPLETED, FAILED
+  progress          Int          @default(0) // 0 - 100
+  stepDescription   String?
+  workerId          String?
+  providerJobId     String?
+  retries           Int          @default(0)
+  error             String?
+  startedAt         DateTime?
+  completedAt       DateTime?
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  generation        Generation   @relation(fields: [generationId], references: [id], onDelete: Cascade)
+}
+
+model CreditsLedger {
+  id                String       @id @default(uuid())
+  userId            String
+  amount            Int          // Positive = added, Negative = deducted
+  balanceAfter      Int
+  transactionType   String       // SIGNUP_BONUS, PURCHASE, GENERATION_DEBIT, REFUND, SUBSCRIPTION_TOPUP
+  referenceId       String?
+  description       String
+  createdAt         DateTime     @default(now())
+
+  user              User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Subscription {
+  id                      String       @id @default(uuid())
+  userId                  String
+  tier                    String       @default("FREE") // FREE, CREATOR, PRO, STUDIO
+  status                  String       @default("ACTIVE") // ACTIVE, CANCELED, PAST_DUE
+  creditsMonthly          Int          @default(50)
+  currentPeriodStart      DateTime     @default(now())
+  currentPeriodEnd        DateTime
+  cancelAtPeriodEnd       Boolean      @default(false)
+  providerSubscriptionId  String?
+  createdAt               DateTime     @default(now())
+  updatedAt               DateTime     @updatedAt
+
+  user                    User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Report {
+  id                String       @id @default(uuid())
+  reporterUserId    String
+  generationId      String?
+  reason            String
+  details           String?
+  status            String       @default("PENDING") // PENDING, REVIEWED, DISMISSED, ACTIONED
+  reviewedBy        String?
+  reviewedAt        DateTime?
+  createdAt         DateTime     @default(now())
+
+  reporter          User         @relation("UserReports", fields: [reporterUserId], references: [id], onDelete: Cascade)
+  generation        Generation?  @relation(fields: [generationId], references: [id], onDelete: SetNull)
+}
+
+model ModerationAction {
+  id                String       @id @default(uuid())
+  targetUserId      String
+  moderatorId       String
+  actionType        String       // WARNING, CONTENT_TAKEDOWN, TEMPORARY_SUSPENSION, PERMANENT_BAN
+  reason            String
+  relatedReportId   String?
+  createdAt         DateTime     @default(now())
+
+  targetUser        User         @relation("TargetUserActions", fields: [targetUserId], references: [id], onDelete: Cascade)
+}
+
+model AuditLog {
+  id                String       @id @default(uuid())
+  userId            String?
+  action            String       // USER_SIGNUP, KYC_VERIFICATION, PROMPT_BLOCKED, GENERATION_DISPATCH, etc.
+  ipHash            String?
+  userAgent         String?
+  metadata          String?      // JSON string representation
+  createdAt         DateTime     @default(now())
+
+  user              User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+}
